@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import peewee as pw
 
 # Inicializamos todos los dataframes iniciales
@@ -69,6 +67,7 @@ amazonDf.listed_in = [
     concatStrings(loc, "Action", "Adventure") for loc in amazonDf.listed_in
 ]
 amazonDf.listed_in = amazonDf.listed_in.str.replace(r"^[\W_]+|[\W_]+$", "")
+amazonDf.duration = amazonDf.duration.str.extract('(\d+)', expand=False).fillna(0)
 
 # Disney
 
@@ -99,6 +98,7 @@ disneyDf.listed_in = disneyDf.listed_in.str.replace("Series", "")
 disneyDf.listed_in = disneyDf.listed_in.str.replace("Police/Cop", "Crime")
 disneyDf.listed_in = disneyDf.listed_in.str.replace(", Romantic Comedy", "")
 disneyDf.listed_in = disneyDf.listed_in.str.replace(r"^[\W_]+|[\W_]+$", "")
+disneyDf.duration = disneyDf.duration.str.extract('(\d+)', expand=False).fillna(0)
 
 # Hulu
 
@@ -127,6 +127,7 @@ huluDf.listed_in = huluDf.listed_in.str.replace(r"^[\W_]+|[\W_]+$", "")
 huluDf.listed_in = huluDf.listed_in.str.replace("  ", " ")
 huluDf.listed_in = huluDf.listed_in.str.replace(" , ", ", ")
 huluDf.listed_in = huluDf.listed_in.str.replace("LGBTQ+", "LGBTQ", regex=False)
+huluDf.duration = huluDf.duration.str.extract('(\d+)', expand=False).fillna(0)
 
 # Netflix
 
@@ -168,6 +169,7 @@ netflixDf.listed_in = [
     eitherStrings(loc, "Classic", "Cult", "Classic & Cult")
     for loc in netflixDf.listed_in
 ]
+netflixDf.duration = netflixDf.duration.str.extract('(\d+)', expand=False).fillna(0)
 
 # Creando un dataframe que contenga solo los generos
 
@@ -218,6 +220,7 @@ class Movie(BaseModel):
     title = pw.CharField()
     mtype = pw.CharField()
     description = pw.CharField()
+    duration = pw.IntegerField()
     platform = pw.ForeignKeyField(Platform, backref="movies")
 
 
@@ -268,8 +271,8 @@ platformsList = [
 Platform.insert_many(platformsList).execute()
 
 Movie.delete().execute()
-moviesDB = moviesDf.loc[:, ["release_year", "title", "type", "description", "platform"]]
-moviesDB.columns = ["year", "title", "mtype", "description", "platform_id"]
+moviesDB = moviesDf.loc[:, ["release_year", "title", "type", "description", "duration", "platform"]]
+moviesDB.columns = ["year", "title", "mtype", "description", "duration", "platform_id"]
 moviesDB.year = moviesDB.year.astype(int)
 moviesDB["id"] = moviesDB.index
 Movie.insert_many(moviesDB.to_dict(orient="records")).execute()
